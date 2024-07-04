@@ -1,0 +1,33 @@
+---
+- name: Install Jenkins
+  hosts: jenkins
+  become: yes
+  vars:
+    jenkins_port: 8080
+
+  tasks:
+    - name: Install Java
+      yum:
+        name: java-1.8.0-openjdk
+        state: present
+
+    - name: Add Jenkins repository
+      yum_repository:
+        name: jenkins
+        description: Jenkins
+        baseurl: http://pkg.jenkins.io/redhat-stable/
+        gpgkey: http://pkg.jenkins.io/redhat/jenkins.io.key
+        state: present
+
+    - name: Install Jenkins
+      yum:
+        name: jenkins
+        state: present
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: create all secret

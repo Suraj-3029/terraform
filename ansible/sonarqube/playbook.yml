@@ -1,0 +1,51 @@
+---
+- name: Install SonarQube
+  hosts: sonarqube
+  become: yes
+  vars:
+    sonarqube_port: 9000
+
+  tasks:
+    - name: Install Java
+      yum:
+        name: java-1.8.0-openjdk
+        state: present
+
+    - name: Install SonarQube
+      shell: |
+        yum install -y wget
+        wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-8.9.3.48735.zip
+        unzip sonarqube-8.9.3.48735.zip -d /opt/
+        mv /opt/sonarqube-8.9.3.48735 /opt/sonarqube
+        useradd sonar
+        chown -R sonar:sonar /opt/sonarqube
+
+    - name: Create systemd service for SonarQube
+      copy:
+        dest: /etc/systemd/system/sonarqube.service
+        content: |
+          [Unit]
+          Description=SonarQube service
+          After=syslog.target network.target
+
+          [Service]
+          Type=forking
+
+          ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+          ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+
+          User=sonar
+          Group=sonar
+          Restart=always
+          LimitNOFILE=65536
+          LimitNPROC=4096
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and start SonarQube
+      systemd:
+        daemon_reload: yes
+        name: sonarqube
+        enabled: yes
+        state: started
